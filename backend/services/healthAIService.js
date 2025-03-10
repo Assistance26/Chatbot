@@ -1,22 +1,20 @@
-const tf = require("@tensorflow/tfjs-node");
+const HealthData = require("../models/HealthData");
 
-const predictHealthRisk = async (inputData) => {
+// Function to fetch user health data
+const fetchUserHealthData = async (userId) => {
     try {
-        // Load pre-trained model (Placeholder - Replace with actual model path)
-        const model = await tf.loadLayersModel("file://models/healthModel.json");
+        // Fetch health data from MongoDB
+        const healthData = await HealthData.findOne({ userId });
 
-        // Convert input data to tensor
-        const inputTensor = tf.tensor2d([inputData]);
+        if (!healthData) {
+            return { error: "No health data found for this user" };
+        }
 
-        // Make prediction
-        const prediction = model.predict(inputTensor);
-        const riskLevel = prediction.dataSync()[0];
-
-        return { riskLevel };
+        return healthData;
     } catch (error) {
-        console.error("❌ Health AI Prediction Error:", error);
-        return { error: "AI health prediction failed" };
+        console.error("❌ Error fetching health data:", error);
+        return { error: "Failed to fetch health data" };
     }
 };
 
-module.exports = { predictHealthRisk };
+module.exports = { fetchUserHealthData };
