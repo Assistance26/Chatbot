@@ -65,12 +65,14 @@
 
 // export default chatService;
 
-const API_URL = "http://localhost:5000";
+const HF_API_URL = "https://api-inference.huggingface.co/models/shreyankuk/medgpt";
+const HF_API_KEY = import.meta.env.VITE_HUGGINGFACE_API_KEY; // For React (Vite)
 
 const chatService = {
     getResponse: async (message, retries = 3, timeout = 10000, delay = 2000) => {
         let attempt = 0;
-        console.log(message);
+        console.log("ChatService Query:", message);
+
         while (attempt <= retries) {
             attempt++;
             const controller = new AbortController();
@@ -82,23 +84,31 @@ const chatService = {
             }, timeout);
 
             try {
-                const response = await fetch(`${API_URL}/chat`, {
+                const response = await fetch(HF_API_URL, {
                     method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ message }),
+                    headers: { 
+                        "Authorization": `Bearer ${HF_API_KEY}`,
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({ inputs: message }), // Hugging Face expects "inputs"
                     signal,
                 });
-                
+
+                console.log(HF_API_URL);
                 clearTimeout(timeoutId);
 
                 if (!response.ok) {
                     console.warn(`⚠️ Server responded with ${response.status}: ${response.statusText}`);
 
+                    if (response.status === 401) {
+                        return { success: false, error: "Invalid Hugging Face API key." };
+                    }
+
                     if (response.status >= 400 && response.status < 500) {
                         return { success: false, error: "Invalid request. Please check input." };
                     }
 
-                    if (response.status >= 500 && response.status < 600) {
+                    if (response.status >= 500) {
                         console.error("⚠️ Server-side error. Retrying may not help.");
                         throw new Error(`Server error (${response.status}): ${response.statusText}`);
                     }
@@ -112,12 +122,12 @@ const chatService = {
                     throw new Error("Invalid AI response format.");
                 }
 
-                if (!data || typeof data !== "object" || !data.reply || data.reply.trim() === "") {
+                if (!data || !Array.isArray(data) || !data[0]?.generated_text) {
                     console.error("⚠️ Unexpected API response format:", data);
                     throw new Error("AI response is empty or invalid.");
                 }
 
-                return { success: true, reply: data.reply };
+                return { success: true, reply: data[0].generated_text };
             } catch (error) {
                 clearTimeout(timeoutId); // Ensure cleanup
 
