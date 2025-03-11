@@ -170,29 +170,24 @@ const Chatbot = () => {
     setMessage(""); // Reset the message input immediately
 
     try {
-      const aiResponse = await chatService.getResponse(trimmedMessage, aiPersona);
+        const data = await chatService.getResponse(trimmedMessage, aiPersona); // ✅ No need for .json()
+        console.log("🛠 Frontend Received Data:", data); // ✅ Debugging line
 
-      if (!aiResponse || typeof aiResponse !== "object") {
-        throw new Error("Invalid response from AI.");
-      }
+        // Ensure the correct structure is accessed
+        if (!data || !data.reply) {
+            throw new Error("Unexpected response format.");
+        }
 
-      if (!("success" in aiResponse) || !("reply" in aiResponse)) {
-        throw new Error("Unexpected response format.");
-      }
-
-      if (!aiResponse.success) {
-        throw new Error(aiResponse.error || "AI response unsuccessful.");
-      }
-
-      const aiText = aiResponse.reply?.trim() || "(No response received)";
-      setChatHistory((prev) => [...prev, { sender: "ai", text: aiText }]);
+        setChatHistory((prev) => [...prev, { sender: "ai", text: data.reply }]);
     } catch (err) {
-      console.error("Chatbot Error:", err);
-      setError("⚠️ Oops! AI couldn't generate a response. Try again.");
+        console.error("Chatbot Error:", err);
+        setError("⚠️ Oops! AI couldn't generate a response. Try again.");
     } finally {
-      setAiTyping(false);
+        setAiTyping(false);
     }
-  }, [message, aiPersona, analyzeText]);
+}, [message, aiPersona, analyzeText]);
+
+
 
   // Dark mode toggling
   useEffect(() => {

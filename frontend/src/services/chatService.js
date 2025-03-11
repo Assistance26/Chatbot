@@ -68,9 +68,10 @@
 const API_URL = "http://localhost:5000";
 
 const chatService = {
-    getResponse: async (message, retries = 3, timeout = 10000, delay = 2000) => {
+    getResponse: async (message, aiPersona, retries = 3, timeout = 10000, delay = 2000) => {
         let attempt = 0;
-        console.log(message);
+        console.log("ChatService", message);
+
         while (attempt <= retries) {
             attempt++;
             const controller = new AbortController();
@@ -82,13 +83,16 @@ const chatService = {
             }, timeout);
 
             try {
-                const response = await fetch(`${API_URL}/chat`, {
+                const response = await fetch(`${API_URL}/api/chatbot/query`, {
                     method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ message }),
+                    headers: { 
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({ message, aiPersona }),
                     signal,
                 });
-                
+
+                console.log(API_URL);
                 clearTimeout(timeoutId);
 
                 if (!response.ok) {
@@ -141,4 +145,3 @@ const chatService = {
 };
 
 export default chatService;
-

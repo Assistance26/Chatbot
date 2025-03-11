@@ -4,6 +4,6 @@ const authMiddleware = require("../utils/authMiddleware");
 
 const router = express.Router();
 
-router.post("/query", authMiddleware, chatbotController.chatbotQuery); // ✅ Fixed function name
+router.post("/query", chatbotController.chatbotQuery); // ✅ Fixed function name
 
 module.exports = router;

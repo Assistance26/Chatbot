@@ -1,12 +1,12 @@
 const axios = require("axios");
 const { OPENAI_API_KEY } = require("../config/apiKeys");
 
-const openaiService = async (message) => {
+async function getChatbotResponse(message) { // ✅ Use a named function
     try {
         const response = await axios.post(
             "https://api.openai.com/v1/chat/completions",
             {
-                model: "gpt-4",
+                model: "gpt-3.5-turbo",
                 messages: [{ role: "user", content: message }],
                 max_tokens: 150,
             },
@@ -17,11 +17,13 @@ const openaiService = async (message) => {
                 },
             }
         );
-        return response.data.choices[0].message.content;
+        return { reply: response.data.choices[0].message.content };
+
     } catch (error) {
         console.error("❌ OpenAI API Error:", error.response?.data || error);
         return "⚠️ Sorry, I'm unable to process your request at the moment.";
     }
-};
+}
 
-module.exports = openaiService;
+// ✅ Fix export to match the named import
+module.exports = { getChatbotResponse };
