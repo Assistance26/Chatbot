@@ -4,7 +4,7 @@ const authMiddleware = require("../utils/authMiddleware");
 
 const router = express.Router();
 
-router.get("/", authMiddleware, anomalyController.getAnomalies);
-router.post("/flag", authMiddleware, anomalyController.flagAnomaly);
+router.get("/", anomalyController.getAnomalies);
+router.post("/flag", anomalyController.flagAnomaly);
 
 module.exports = router;

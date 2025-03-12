@@ -4,8 +4,8 @@ const authMiddleware = require("../utils/authMiddleware");
 
 const router = express.Router();
 
-router.get("/", authMiddleware, alertsController.getAlerts);
-router.post("/create", authMiddleware, alertsController.createAlert);
-router.post("/acknowledge", authMiddleware, alertsController.acknowledgeAlert);
+router.get("/",  alertsController.getAlerts);
+router.post("/create",  alertsController.createAlert);
+router.post("/acknowledge",  alertsController.acknowledgeAlert);
 
 module.exports = router;

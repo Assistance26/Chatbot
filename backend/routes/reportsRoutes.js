@@ -1,12 +1,11 @@
 const express = require("express");
 const reportsController = require("../controllers/reportsController");
-const authMiddleware = require("../utils/authMiddleware");
 
 const router = express.Router();
 
-router.get("/weekly", authMiddleware, reportsController.getWeeklyReport);
-router.get("/monthly", authMiddleware, reportsController.getMonthlyReport);
-router.get("/", authMiddleware, reportsController.getReports);
-router.post("/", authMiddleware, reportsController.generateReport);
+router.get("/weekly", reportsController.getWeeklyReport);
+router.get("/monthly", reportsController.getMonthlyReport);
+router.get("/", reportsController.getReports);
+router.post("/", reportsController.generateReport);
 
 module.exports = router;

@@ -3,6 +3,8 @@ const cors = require("cors");
 const mongoose = require("mongoose");
 const expressWs = require("express-ws"); // Import express-ws
 const bodyParser = require("body-parser");
+require("dotenv").config();
+
 
 // Initialize Express app with WebSocket support
 const app = express();
@@ -34,7 +36,7 @@ app.use("/api/websocket", websocketRoutes); // ✅ Use WebSocket route
 // MongoDB Connection
 const PORT = process.env.PORT || 5000;
 const MONGO_URI = process.env.MONGO_URI;
-
+console.log("✅ Loaded ENV Variables:", process.env.HUGGINGFACE_API_KEY ? "Hugging Face API Key exists" : "Missing Hugging Face API Key");
 const connectDB = async () => {
   try {
     await mongoose.connect(MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true });

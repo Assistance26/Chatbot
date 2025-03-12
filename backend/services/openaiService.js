@@ -29,21 +29,36 @@
 
 const axios = require("axios");
 
-const getHuggingFaceResponse = async (message) => {
     const API_URL = "https://api-inference.huggingface.co/models/microsoft/BioGPT";
-    const API_KEY = "your_huggingface_api_key";  // Replace with your actual token
-
-    try {
-        const response = await axios.post(
-            API_URL,
-            { inputs: message },
-            { headers: { Authorization: `Bearer ${API_KEY}` } }
-        );
-        return response.data; 
-    } catch (error) {
-        console.error("Hugging Face API Error:", error);
-        return { error: "Failed to fetch response" };
-    }
-};
-
-module.exports = { getHuggingFaceResponse };
+    const API_KEY = "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";  // Replace with your actual token
+    const getHuggingFaceResponse = async (message) => {
+        if (!API_KEY) {
+            console.error("❌ Hugging Face API Key is missing.");
+            return { error: "AI service unavailable." };
+        }
+    
+        try {
+            const response = await axios.post(
+                API_URL,
+                { inputs: message },
+                { headers: { Authorization: `Bearer ${API_KEY}` } }
+            );
+    
+            console.log("🟢 Hugging Face Raw Response:", response.data);
+    
+            // Ensure we are extracting the right data
+            if (Array.isArray(response.data) && response.data.length > 0) {
+                const aiReply = response.data[0].generated_text || "No response from AI.";
+                console.log("✅ Extracted AI Reply:", aiReply);
+                return aiReply;
+            }
+    
+            console.error("⚠️ Unexpected AI response format:", response.data);
+            return "Unexpected AI response format.";
+        } catch (error) {
+            console.error("❌ Hugging Face API Error:", error?.response?.data || error.message);
+            return { error: "Failed to fetch response from AI." };
+        }
+    };
+    
+    module.exports = { getHuggingFaceResponse };

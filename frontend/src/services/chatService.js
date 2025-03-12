@@ -65,13 +65,14 @@
 
 // export default chatService;
 
-const HF_API_URL = "https://api-inference.huggingface.co/models/shreyankuk/medgpt";
-const HF_API_KEY = import.meta.env.VITE_HUGGINGFACE_API_KEY; // For React (Vite)
+const HF_API_URL = "https://api-inference.huggingface.co/models/google/gemma-7b";
+const HF_API_KEY = import.meta.env.VITE_HUGGINGFACE_API_KEY; // Read from Vite env
 
 const chatService = {
-    getResponse: async (message, retries = 3, timeout = 10000, delay = 2000) => {
+    getResponse: async (message, aiPersona = "default", retries = 3, timeout = 10000, delay = 2000) => {
         let attempt = 0;
-        console.log("ChatService Query:", message);
+        console.log("🟢 ChatService Query:", message);
+        console.log("🟢 AI Persona:", aiPersona);
 
         while (attempt <= retries) {
             attempt++;
@@ -84,66 +85,41 @@ const chatService = {
             }, timeout);
 
             try {
-                const response = await fetch(HF_API_URL, {
+                // ✅ Call your own backend instead of Hugging Face directly
+                const response = await fetch("http://localhost:5000/api/chatbot/query", {
                     method: "POST",
-                    headers: { 
-                        "Authorization": `Bearer ${HF_API_KEY}`,
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({ inputs: message }), // Hugging Face expects "inputs"
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ message, aiPersona }),
                     signal,
                 });
 
-                console.log(HF_API_URL);
                 clearTimeout(timeoutId);
 
+                console.log(`🟢 Response Status: ${response.status} - ${response.statusText}`);
+
                 if (!response.ok) {
-                    console.warn(`⚠️ Server responded with ${response.status}: ${response.statusText}`);
-
-                    if (response.status === 401) {
-                        return { success: false, error: "Invalid Hugging Face API key." };
-                    }
-
-                    if (response.status >= 400 && response.status < 500) {
-                        return { success: false, error: "Invalid request. Please check input." };
-                    }
-
-                    if (response.status >= 500) {
-                        console.error("⚠️ Server-side error. Retrying may not help.");
-                        throw new Error(`Server error (${response.status}): ${response.statusText}`);
-                    }
+                    throw new Error(`API Error ${response.status}: ${response.statusText}`);
                 }
 
-                let data;
-                try {
-                    data = await response.json();
-                } catch (jsonError) {
-                    console.error("⚠️ Failed to parse JSON response:", jsonError);
-                    throw new Error("Invalid AI response format.");
+                const data = await response.json();
+                console.log("🟢 Backend API Response:", data);
+
+                // Validate API response structure
+                if (!data || !data.success || !Array.isArray(data.reply)) {
+                    throw new Error(data.error || "Unexpected API response format.");
                 }
 
-                if (!data || !Array.isArray(data) || !data[0]?.generated_text) {
-                    console.error("⚠️ Unexpected API response format:", data);
-                    throw new Error("AI response is empty or invalid.");
-                }
-
-                return { success: true, reply: data[0].generated_text };
+                return { success: true, reply: data.reply[0] }; // Ensure the first reply is returned
             } catch (error) {
-                clearTimeout(timeoutId); // Ensure cleanup
-
-                if (error.name === "AbortError") {
-                    console.error(`⚠️ Request aborted due to timeout (Attempt ${attempt}/${retries + 1}).`);
-                } else {
-                    console.error(`❌ Chat Service Error: ${error.message}`);
-                }
+                clearTimeout(timeoutId);
+                console.error(`❌ Chat Service Error: ${error.message}`);
 
                 if (attempt <= retries) {
-                    const jitter = Math.random() * 500; // Add randomness to delay
-                    const retryDelay = delay + jitter;
-                    console.warn(`🔄 Retrying in ${(retryDelay / 1000).toFixed(1)}s... Attempts left: ${retries - attempt + 1}`);
+                    const retryDelay = delay + Math.random() * 500;
+                    console.warn(`🔄 Retrying in ${(retryDelay / 1000).toFixed(1)}s... Attempts left: ${retries - attempt}`);
                     await new Promise(resolve => setTimeout(resolve, retryDelay));
                 } else {
-                    return { success: false, error: error.message || "Failed to fetch chat response." };
+                    return { success: false, reply: ["Error: AI service is unavailable."] };
                 }
             }
         }
@@ -151,4 +127,3 @@ const chatService = {
 };
 
 export default chatService;
-

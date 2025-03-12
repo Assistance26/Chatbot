@@ -149,6 +149,7 @@ const Chatbot = () => {
   const [aiPersona, setAiPersona] = useState("Friendly");
   const [aiTyping, setAiTyping] = useState(false);
   const [error, setError] = useState(null);
+  const [data, setData] = useState(null); // State to store API response
   const chatContainerRef = useRef(null);
 
   const personas = ["Friendly", "Formal", "Sarcastic", "Techie", "Philosopher"];
@@ -158,44 +159,70 @@ const Chatbot = () => {
     chatContainerRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [chatHistory]);
 
-  // Handle sending a message and getting AI response
+  // Fetch AI response and process it
   const handleSendMessage = useCallback(async () => {
     const trimmedMessage = message.trim();
     if (!trimmedMessage) return;
-
+  
     setChatHistory((prev) => [...prev, { sender: "user", text: trimmedMessage }]);
     analyzeText(trimmedMessage);
     setAiTyping(true);
     setError(null);
-    setMessage(""); // Reset the message input immediately
-
+    setMessage(""); // Reset input field
+  
     try {
-        const data = await chatService.getResponse(trimmedMessage, aiPersona); // ✅ No need for .json()
-        console.log("🛠 Frontend Received Data:", data); // ✅ Debugging line
+      const responseData = await chatService.getResponse(trimmedMessage, aiPersona);
+      console.log("🛠 Frontend Received Data:", responseData); // Debugging
+  
+      if (!responseData || typeof responseData !== "object" || !responseData.success) {
+        throw new Error("Unexpected response format.");
+      }
+  
+      // Here, ensure that reply is an array and access the first element of the array
+      const replyText = Array.isArray(responseData.reply) ? responseData.reply[0] : responseData.reply;
+      
+      if (!replyText || typeof replyText !== "string") {
+        throw new Error("Invalid reply format.");
+      }
+  
+      setChatHistory((prev) => [...prev, { sender: "ai", text: replyText }]);
+    } catch (err) {
+      console.error("Chatbot Error:", err);
+      setError("⚠️ Oops! AI couldn't generate a response. Try again.");
+    } finally {
+      setAiTyping(false);
+    }
+  }, [message, aiPersona, analyzeText]);
+  
 
-        // Ensure the correct structure is accessed
-        if (!data || !data.reply) {
-            throw new Error("Unexpected response format.");
+  // UseEffect to process the AI response when `data` changes
+  useEffect(() => {
+    if (data) {
+      console.log("📡 API Response:", data);  // Debugging log
+
+      if (data.success && data.reply) {
+        let aiMessage = "";
+
+        // Ensure reply is a string
+        if (Array.isArray(data.reply)) {
+          aiMessage = data.reply[0]; // Use the first item
+        } else if (typeof data.reply === "string") {
+          aiMessage = data.reply;
+        } else {
+          aiMessage = "⚠️ Unexpected reply format.";
         }
 
-        setChatHistory((prev) => [...prev, { sender: "ai", text: data.reply }]);
-    } catch (err) {
-        console.error("Chatbot Error:", err);
-        setError("⚠️ Oops! AI couldn't generate a response. Try again.");
-    } finally {
-        setAiTyping(false);
+        setChatHistory((prev) => [...prev, { sender: "ai", text: aiMessage }]);
+      } else {
+        console.error("🚨 Error: Invalid API response format!", data);
+        setChatHistory((prev) => [...prev, { sender: "ai", text: "⚠️ Error processing response." }]);
+      }
     }
-}, [message, aiPersona, analyzeText]);
-
-
+  }, [data]);
 
   // Dark mode toggling
   useEffect(() => {
-    if (darkMode) {
-      document.body.classList.add("dark");
-    } else {
-      document.body.classList.remove("dark");
-    }
+    document.body.classList.toggle("dark", darkMode);
   }, [darkMode]);
 
   return (

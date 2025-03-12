@@ -40,12 +40,19 @@ const { getHuggingFaceResponse } = require("../services/openaiService");
 exports.chatbotQuery = async (req, res) => {
     try {
         const { message } = req.body;
-        if (!message) return res.status(400).json({ error: "Message is required" });
+        if (!message || typeof message !== "string") {
+            return res.status(400).json({ success: false, error: "Invalid request. Please check input." });
+        }
 
         const response = await getHuggingFaceResponse(message);
-        res.json({ response });
+
+        if (!response) {
+            return res.status(500).json({ success: false, error: "Failed to receive a valid response from AI service." });
+        }
+
+        res.json({ success: true, reply: response });
     } catch (error) {
-        console.error("Chatbot Error:", error);
-        res.status(500).json({ error: "Internal server error" });
+        console.error("❌ Chatbot Error:", error);
+        res.status(500).json({ success: false, error: "Internal server error." });
     }
 };
